@@ -94,7 +94,7 @@ Loose Mode
 30
 > Add 10 20
 30
-``
+```
 
 ### Autogen help infomation
 print help infomation with empty input
