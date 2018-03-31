@@ -53,7 +53,7 @@ usage:     Test <path> [-s <scheme>] [-v]
 Unix-like `test <path> -s <scheme> -v` </br>
 DOS-like  `test <path> /s <scheme> /v` or `test <path> /s:<scheme> /v`
 
-- Optional parameters
+### Optional parameters
 
 Attatch `CLIOptional` attribute to method parameter
 Optional parameter must have default values.
