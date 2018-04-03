@@ -26,7 +26,7 @@ namespace CLIfy
             var fmt = $"    {CommandName} ";
 
             List<string> fmtparam = new List<string>();
-            foreach(var p in Params)
+            foreach (var p in Params)
             {
                 if (!p.IsOptional)
                 {
@@ -34,7 +34,7 @@ namespace CLIfy
                 }
                 else
                 {
-                    if(p.ParamType == typeof(bool))
+                    if (p.ParamType == typeof(bool))
                     {
                         fmtparam.Add($"[-{p.Key}]");
                     }
@@ -42,7 +42,7 @@ namespace CLIfy
                     {
                         fmtparam.Add($"[-{p.Key} <{p.Name}>]");
                     }
-                    
+
                 }
             }
             fmt += string.Join(' ', fmtparam.ToArray());
@@ -65,7 +65,7 @@ namespace CLIfy
                 cmdparam.ParamType = p.ParameterType;
                 var optionalAttr = Attribute.GetCustomAttribute(p, typeof(CLIOptional)) as CLIOptional;
                 cmdparam.IsOptional = optionalAttr != null;
-                if(optionalAttr != null && optionalAttr.Key != null)
+                if (optionalAttr != null && optionalAttr.Key != null)
                 {
                     cmdparam.Key = optionalAttr.Key;
                 }
@@ -84,12 +84,12 @@ namespace CLIfy
         }
 
 
-        public bool IsMatch(CommandCall call,bool strict = false)
+        public bool IsMatch(CommandCall call, bool strict = false)
         {
             return IsEntryMatch(call.Entry, strict);
         }
 
-        public bool IsEntryMatch(string entry,bool strict = false)
+        public bool IsEntryMatch(string entry, bool strict = false)
         {
             if (strict)
             {
@@ -129,14 +129,14 @@ namespace CLIfy
                     }
                     else
                     {
-                        return CLIResult.Error($"Param '{p.Key}' is required.",this);
+                        return CLIResult.Error($"Param '{p.Key}' is required.", this);
                     }
                 }
                 else
                 {
                     var options = call.Options;
                     var opt = options.Keys.FirstOrDefault((o) => { return o.ToLower() == p.Key.ToLower(); });
-                    if(opt == null)
+                    if (opt == null)
                     {
                         fill.Add(p.DefaultValue);
                     }
@@ -144,7 +144,7 @@ namespace CLIfy
                     {
                         var calloption = options[opt];
 
-                        if(p.ParamType == typeof(bool))
+                        if (p.ParamType == typeof(bool))
                         {
                             if (string.IsNullOrEmpty(calloption))
                             {
@@ -152,11 +152,11 @@ namespace CLIfy
                             }
                             else
                             {
-                                if(calloption.ToLower() == "true")
+                                if (calloption.ToLower() == "true")
                                 {
                                     fill.Add(true);
                                 }
-                                else if(calloption.ToLower() == "false")
+                                else if (calloption.ToLower() == "false")
                                 {
                                     fill.Add(false);
                                 }
@@ -170,7 +170,7 @@ namespace CLIfy
                         {
                             if (string.IsNullOrEmpty(calloption))
                             {
-                                return CLIResult.Error($"Optional parameter '{p.Key}' missing values.",this);
+                                return CLIResult.Error($"Optional parameter '{p.Key}' missing values.", this);
                             }
 
                             object ret = null;
@@ -193,17 +193,23 @@ namespace CLIfy
             {
                 callresult = m_method.Invoke(null, fill.ToArray());
             }
-            catch(Exception e)
+            catch (Exception e)
             {
+#if DEBUG
+                return CLIResult.Error($"[Exception]Command <{CommandName}> : {e.Message} {e.StackTrace}", this);
+
+#else
                 return CLIResult.Error($"[Exception]Command <{CommandName}> : {e.Message}",this);
+#endif
+
             }
 
             if (callresult == null)
             {
                 return CLIResult.Success();
             }
-            
-            if(callresult is CLIResult)
+
+            if (callresult is CLIResult)
             {
                 return (CLIResult)callresult;
             }
@@ -216,17 +222,17 @@ namespace CLIfy
         {
             ret = null;
 
-            if(t == typeof(int))
+            if (t == typeof(int))
             {
                 int res = 0;
-                if(int.TryParse(rawobj, out res))
+                if (int.TryParse(rawobj, out res))
                 {
                     ret = res;
                     return true;
                 }
                 return false;
             }
-            else if(t == typeof(float))
+            else if (t == typeof(float))
             {
                 float res = 0;
                 if (float.TryParse(rawobj, out res))
@@ -256,7 +262,7 @@ namespace CLIfy
                 }
                 return false;
             }
-            else if(t == typeof(string))
+            else if (t == typeof(string))
             {
                 ret = rawobj;
                 return true;

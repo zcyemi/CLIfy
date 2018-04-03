@@ -54,5 +54,6 @@ namespace CLIfy
             return new CLIResult(ResultType.Success,result == null ? null : result.ToString());
         }
 
+
     }
 }

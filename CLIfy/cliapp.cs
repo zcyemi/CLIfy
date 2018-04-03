@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Diagnostics;
 namespace CLIfy
 {
 
@@ -21,15 +22,20 @@ namespace CLIfy
         public string Name { get; private set; }
         public bool StrictMode;
 
+        private bool m_willExit = false;
+
         public List<CLICommandInfo> Commands { get { return m_cmds; } }
 
-        public CLIApp(string name,bool strict = false,CLIstyle style = CLIstyle.Unix)
+        private string m_workingDir;
+
+        public CLIApp(string name, bool strict = false, CLIstyle style = CLIstyle.Unix)
         {
             this.Name = name;
             this.Style = style;
             this.StrictMode = strict;
+            m_workingDir = Environment.CurrentDirectory;
 
-            if(style == CLIstyle.Unix)
+            if (style == CLIstyle.Unix)
             {
                 m_parser = new CLIParserUnix(this);
             }
@@ -53,24 +59,17 @@ namespace CLIfy
         }
 
 
-        internal void RegisterCLI<T>(Func<CLIApp,T,CLIResult> internalcmd)
+        internal void RegisterCLI<T>(Func<CLIApp, T, CLIResult> internalcmd)
         {
             Register(internalcmd.GetMethodInfo());
         }
 
-        internal void RegisterCLI(Func<CLIApp,CLIResult> cmd)
+        internal void RegisterCLI(Func<CLIApp, CLIResult> cmd)
         {
             Register(cmd.GetMethodInfo());
         }
 
-
-
-        public void Register<P0, P1>(Action<P0, P1> method)
-        {
-            Register(method.GetMethodInfo());
-        }
-
-        public void Register<P0, P1, P2>(Action<P0, P1,P2> method)
+        public void Register(Action method)
         {
             Register(method.GetMethodInfo());
         }
@@ -79,7 +78,38 @@ namespace CLIfy
         {
             Register(method.GetMethodInfo());
         }
-        public void RegisterFunction<T0,T1,T2>(Func<T0,T1,T2> method)
+
+        public void Register<P0, P1>(Action<P0, P1> method)
+        {
+            Register(method.GetMethodInfo());
+        }
+
+        public void Register<P0, P1, P2>(Action<P0, P1, P2> method)
+        {
+            Register(method.GetMethodInfo());
+        }
+
+        public void RegisterFunction<T0>(Func<T0> method)
+        {
+            Register(method.GetMethodInfo());
+        }
+
+        public void RegisterFunction<T0, T1>(Func<T0, T1> method)
+        {
+            Register(method.GetMethodInfo());
+        }
+
+        public void RegisterFunction<T0, T1, T2>(Func<T0, T1, T2> method)
+        {
+            Register(method.GetMethodInfo());
+        }
+
+
+        public void RegisterFunction<T0, T1, T2, T3>(Func<T0, T1, T2, T3> method)
+        {
+            Register(method.GetMethodInfo());
+        }
+        public void RegisterFunction<T0, T1, T2, T3,T4>(Func<T0, T1, T2, T3,T4> method)
         {
             Register(method.GetMethodInfo());
         }
@@ -91,6 +121,11 @@ namespace CLIfy
             var method = CLICommandInfo.Parse(methodinfo);
             m_cmds.Add(method);
 
+        }
+
+        public void Exit()
+        {
+            m_willExit = true;
         }
 
         public void Run(string[] args)
@@ -110,6 +145,8 @@ namespace CLIfy
                     var cmdcall = ParseLine(input);
                     ExecuteCommandCall(cmdcall);
                 }
+
+                if (m_willExit) break;
             }
         }
 
@@ -125,7 +162,7 @@ namespace CLIfy
             {
                 foreach (var m in m_cmds)
                 {
-                    if (m.IsMatch(call,StrictMode))
+                    if (m.IsMatch(call, StrictMode))
                     {
                         if (call.HasError)
                         {
@@ -173,7 +210,49 @@ namespace CLIfy
         }
 
 
+        public void Process(string filename,string arg,string workingDir = null,bool stdout = true,bool stderr = true,Action<string> procStdOut = null){
+            RunProcess(filename,arg,string.IsNullOrEmpty(workingDir) ? m_workingDir : workingDir,stdout,stderr,procStdOut);
+        }
 
+        public static void RunProcess(string filename,string arg,string workingDir = null,bool stdout = true,bool stderr = true,Action<string> procStdOut = null){
 
+            try{
+                Process p = new Process();
+            var startInfo = new ProcessStartInfo(filename,arg);
+            startInfo.RedirectStandardOutput = stdout;
+            startInfo.RedirectStandardError = stderr;
+            startInfo.WorkingDirectory = workingDir;
+            startInfo.UseShellExecute = false;
+
+            p.StartInfo = startInfo;
+
+            // CLIConsole.Log($"{filename} {arg}");
+            // CLIConsole.Log($"dir:{startInfo.WorkingDirectory}");
+
+            if(!p.Start()){
+                Console.WriteLine("process not start");
+                return;
+            }
+            p.WaitForExit();
+
+            var strout = p.StandardOutput.ReadToEnd();
+            var strerr = p.StandardError.ReadToEnd();
+
+            if(!string.IsNullOrEmpty(strout)){
+                Console.WriteLine(strout);
+                if(procStdOut != null) procStdOut.Invoke(strout);
+            }
+
+            if(!string.IsNullOrEmpty(strerr)){
+                Console.ForegroundColor =  ConsoleColor.Red;
+                Console.WriteLine(strerr);
+                Console.ResetColor();
+            }
+
+            }
+            catch(Exception e){
+                Console.WriteLine($"Process exception : {e.Message} - {e.StackTrace}");
+            }
+        }
     }
 }
