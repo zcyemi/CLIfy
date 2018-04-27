@@ -20,7 +20,7 @@ namespace CLIfy
             {
                 var si = splits[i];
 
-                if (!si.StartsWith('/'))
+                if (!si.StartsWith("/"))
                 {
                     if (string.IsNullOrEmpty(lastOptStr))
                     {

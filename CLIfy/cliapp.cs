@@ -128,6 +128,12 @@ namespace CLIfy
             m_willExit = true;
         }
 
+
+        public void RunWithString(string arg)
+        {
+            Run(new string[]{arg});
+        }
+
         public void Run(string[] args)
         {
             Console.WriteLine($"[{Name}] - ({Style.ToString()})");

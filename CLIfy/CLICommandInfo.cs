@@ -45,7 +45,7 @@ namespace CLIfy
 
                 }
             }
-            fmt += string.Join(' ', fmtparam.ToArray());
+            fmt += string.Join(" ", fmtparam.ToArray());
             return fmt;
         }
 

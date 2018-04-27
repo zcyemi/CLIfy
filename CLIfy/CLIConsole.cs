@@ -43,7 +43,7 @@ namespace CLIfy
         }
 
         public static bool? Query(string msg,string yes = "Y",string no = "N"){
-            if(!msg.EndsWith('?'))msg = msg+"?";
+            if(!msg.EndsWith("?"))msg = msg+"?";
             Console.Write($"- {msg} ({yes}/{no}): ");
             var input = Console.ReadLine();
             input = input.Trim();
