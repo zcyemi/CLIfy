@@ -109,7 +109,7 @@ namespace CLIfy
         {
             Register(method.GetMethodInfo());
         }
-        public void RegisterFunction<T0, T1, T2, T3,T4>(Func<T0, T1, T2, T3,T4> method)
+        public void RegisterFunction<T0, T1, T2, T3, T4>(Func<T0, T1, T2, T3, T4> method)
         {
             Register(method.GetMethodInfo());
         }
@@ -132,6 +132,14 @@ namespace CLIfy
         {
             Console.WriteLine($"[{Name}] - ({Style.ToString()})");
 
+            //parse init args
+
+            if(args != null && args.Length != 0){
+                var argvs = string.Join(" ",args);
+                ExecuteCommandCall(ParseLine(argvs),true);
+            }
+            
+
             while (true)
             {
                 Console.Write("> ");
@@ -151,7 +159,7 @@ namespace CLIfy
         }
 
 
-        private void ExecuteCommandCall(CommandCall call)
+        private void ExecuteCommandCall(CommandCall call,bool isargv = false)
         {
             if (call == null)
             {
@@ -172,10 +180,24 @@ namespace CLIfy
 
                         var result = m.Execute(call);
                         Print(result);
+
+                        if(isargv){
+                            Environment.Exit(result.ErrorCode);
+                        }
+                        else{
+                            if(result.Type == CLIResult.ResultType.Exit){
+                                Environment.Exit(result.ErrorCode);
+                            }
+                        }
+
                         return;
                     }
                 }
                 Print(CLIResult.Error($"Command not found '{call.Entry}'"));
+
+                if(isargv){
+                    Environment.Exit(-1);
+                }
             }
         }
 
@@ -210,47 +232,87 @@ namespace CLIfy
         }
 
 
-        public void Process(string filename,string arg,string workingDir = null,bool stdout = true,bool stderr = true,Action<string> procStdOut = null){
-            RunProcess(filename,arg,string.IsNullOrEmpty(workingDir) ? m_workingDir : workingDir,stdout,stderr,procStdOut);
+        public void Process(string filename, string arg, string workingDir = null, bool stdout = true, bool stderr = true, Func<string, string> procStdOut = null, Func<string, string> procStdErr = null)
+        {
+            RunProcess(filename, arg, string.IsNullOrEmpty(workingDir) ? m_workingDir : workingDir, stdout, stderr, procStdOut, procStdErr);
         }
 
-        public static void RunProcess(string filename,string arg,string workingDir = null,bool stdout = true,bool stderr = true,Action<string> procStdOut = null){
+        public static void RunProcess(string filename, string arg, string workingDir = null, bool stdout = true, bool stderr = true, Func<string, string> procStdOut = null, Func<string, string> procStdErr = null)
+        {
 
-            try{
+            try
+            {
                 Process p = new Process();
-            var startInfo = new ProcessStartInfo(filename,arg);
-            startInfo.RedirectStandardOutput = stdout;
-            startInfo.RedirectStandardError = stderr;
-            startInfo.WorkingDirectory = workingDir;
-            startInfo.UseShellExecute = false;
+                var startInfo = new ProcessStartInfo(filename, arg);
+                startInfo.RedirectStandardOutput = stdout;
+                startInfo.RedirectStandardError = stderr;
+                startInfo.WorkingDirectory = workingDir;
+                startInfo.UseShellExecute = false;
 
-            p.StartInfo = startInfo;
+                p.StartInfo = startInfo;
 
-            // CLIConsole.Log($"{filename} {arg}");
-            // CLIConsole.Log($"dir:{startInfo.WorkingDirectory}");
+                // CLIConsole.Log($"{filename} {arg}");
+                // CLIConsole.Log($"dir:{startInfo.WorkingDirectory}");
 
-            if(!p.Start()){
-                Console.WriteLine("process not start");
-                return;
+                if (!p.Start())
+                {
+                    Console.WriteLine("process not start");
+                    return;
+                }
+                p.WaitForExit();
+
+                var strout = stdout ? p.StandardOutput.ReadToEnd() : null;
+                var strerr = stderr ? p.StandardError.ReadToEnd() : null;
+
+                if (!string.IsNullOrEmpty(strout))
+                {
+                    if (procStdOut != null)
+                    {
+                        var pout = procStdOut.Invoke(strout);
+                        if (!string.IsNullOrEmpty(pout))
+                        {
+                            Console.WriteLine(strout);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine(strout);
+                    }
+                }
+                else
+                {
+                    if (procStdOut != null) procStdOut.Invoke(null);
+                }
+
+                if (!string.IsNullOrEmpty(strerr))
+                {
+
+                    if (procStdErr != null)
+                    {
+                        var perr = procStdErr.Invoke(strerr);
+                        if (!string.IsNullOrEmpty(perr))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine(strerr);
+                            Console.ResetColor();
+                        }
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(strerr);
+                        Console.ResetColor();
+                    }
+
+                }
+                else
+                {
+                    if (procStdErr != null) procStdErr.Invoke(strerr);
+                }
+
             }
-            p.WaitForExit();
-
-            var strout = p.StandardOutput.ReadToEnd();
-            var strerr = p.StandardError.ReadToEnd();
-
-            if(!string.IsNullOrEmpty(strout)){
-                Console.WriteLine(strout);
-                if(procStdOut != null) procStdOut.Invoke(strout);
-            }
-
-            if(!string.IsNullOrEmpty(strerr)){
-                Console.ForegroundColor =  ConsoleColor.Red;
-                Console.WriteLine(strerr);
-                Console.ResetColor();
-            }
-
-            }
-            catch(Exception e){
+            catch (Exception e)
+            {
                 Console.WriteLine($"Process exception : {e.Message} - {e.StackTrace}");
             }
         }

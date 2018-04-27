@@ -41,5 +41,15 @@ namespace CLIfy
             Console.WriteLine($"[Exception] {e.Message} \n {e.StackTrace}");
             Console.ResetColor();
         }
+
+        public static bool? Query(string msg,string yes = "Y",string no = "N"){
+            if(!msg.EndsWith('?'))msg = msg+"?";
+            Console.Write($"- {msg} ({yes}/{no}): ");
+            var input = Console.ReadLine();
+            input = input.Trim();
+            if(input.ToLower() == yes.ToLower()) return true;
+            if(input.ToLower() == no.ToLower()) return false;
+            return null;
+        }
     }
 }
